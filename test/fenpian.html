@@ -28,7 +28,7 @@
       const start = index * chunkSize
       if (start > file.size) {// 当超出文件大小，停止递归上传
         // 请求整合
-        merge(file.name)
+        // merge(file.name)
         return
       }
       const blob = file.slice(start, start + chunkSize)
@@ -37,6 +37,8 @@
 
       const formData = new FormData()
       formData.append('file', blobFile)
+      formData.append('uid', 123)
+      formData.append('folder_name', '公共')
       axios.post('http://127.0.0.1:3000/fen-upload', formData).then(res => {
         console.log(res)
         upload(++index)

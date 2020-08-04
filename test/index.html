@@ -11,7 +11,7 @@
 </head>
 
 <body>
-  <input type="file" id="btnFile">
+  <input type="file" id="btnFile" multiple="multiple" >
   <input type="button" value="上传" onclick="upload()">
   <script>
     let btnFile = document.querySelector('#btnFile')
@@ -19,9 +19,10 @@
     function upload() {
       // 获取上传文件
       const file = btnFile.files[0]
+      console.log('file: ', file)
       const formData = new FormData()
-      console.log('formData: ', formData);
       formData.append('file', file)
+      console.log('formData: ', formData);
       axios.post('http://127.0.0.1:3000/upload', formData).then(res => {
         console.log(res)
       })
