@@ -1,0 +1,86 @@
+const Koa = require('koa');
+const path = require('path');
+const Router = require('koa-router');
+const koaBody = require('koa-body');
+const source = require('koa-static');
+const fse = require('fs-extra')
+
+const app = new Koa();
+const router = new Router()
+
+// 处理静态资源
+app.use(source(path.resolve(__dirname, 'public')))
+
+// 上传文件的目录地址
+const UPLOAD_DIR = path.resolve(__dirname, '../public/upload')
+
+
+// 处理页面请求
+app.use(koaBody({
+    multipart: true,
+    formidable: {
+      uploadDir: path.resolve(__dirname, '../temp'),// 文件存放地址
+      keepExtensions: true,
+      maxFieldsSize: 2 * 1024 * 1024
+    }
+}))
+
+// 文件上传
+router.post('/upload', async ctx => {
+    let {body} = ctx.request;
+    ctx.set('Access-Control-Allow-Origin', '*');
+    ctx.body = '文件上传成功'
+})  
+
+// 文件上传
+router.post('/fen-upload', async ctx => {// 文件转移
+    ctx.set('Access-Control-Allow-Origin', '*');
+    // koa-body 在处理完 file 后会绑定在 ctx.request.files
+    const file = ctx.request.files.file
+    // [ name, index, ext ] - 分割文件名
+    const fileNameArr = file.name.split('.')
+    // 存放切片的目录
+    const chunkDir = `${UPLOAD_DIR}/${fileNameArr[0]}`
+    if (!fse.existsSync(chunkDir)) {// 没有目录就创建目录
+      // 创建大文件的临时目录
+      await fse.mkdirs(chunkDir)
+    }
+    // 原文件名.index - 每个分片的具体地址和名字
+    const dPath = path.join(chunkDir, fileNameArr[1])
+  
+    // 将分片文件从 temp 中移动到本次上传大文件的临时目录
+    await fse.move(file.path, dPath, { overwrite: true })
+    ctx.body = '文件上传成功'
+})
+
+// 合并文件
+router.post('/merge', async ctx => {
+    console.log(1)
+    // ctx.set('Content-Type', 'application/json');
+    ctx.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept');
+    ctx.set('Access-Control-Allow-Method', 'GET,POST,DELETE');
+    ctx.set('Access-Control-Allow-Origin', 'http://127.0.0.1:8080');
+    // ctx.set('Access-Control-Allow-Credentials', false);
+    const { name }= ctx.request.body
+    console.log('name: ', name)
+    const fname = name.split('.')[0]
+  
+    const chunkDir = path.join(UPLOAD_DIR, fname)
+    const chunks = await fse.readdir(chunkDir)
+  
+    chunks.sort((a, b) => a - b).map(chunkPath => {
+      // 合并文件
+      fse.appendFileSync(
+        path.join(UPLOAD_DIR, name),
+        fse.readFileSync(`${chunkDir}/${chunkPath}`)
+      )
+    })
+    // 删除临时文件夹
+    fse.removeSync(chunkDir)
+    // 返回文件地址
+    ctx.body = { msg: '合并成功', url: `http://localhost:3000/upload/${name}` }
+  })
+
+app.use(router.routes()).use(router.allowedMethods())
+
+app.listen(3000, () => console.log('Server runnint on port 3000'))

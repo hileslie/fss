@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <!-- 引入 Koa -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <input type="file" id="btnFile">
+  <input type="button" value="上传" onclick="upload()">
+  <script>
+    let btnFile = document.querySelector('#btnFile')
+
+    function upload() {
+      // 获取上传文件
+      const file = btnFile.files[0]
+      const formData = new FormData()
+      console.log('formData: ', formData);
+      formData.append('file', file)
+      axios.post('http://127.0.0.1:3000/upload', formData).then(res => {
+        console.log(res)
+      })
+    }
+  </script>
+</body>
+
+</html>

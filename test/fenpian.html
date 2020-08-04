@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link type="text/css" rel="stylesheet" href="">
+  <script type="text/javascript" src=""></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <input type="file" id="btnFile">
+  <input type="button" value="上传" onclick="upload(0)">
+  <script>
+    let btnFile = document.querySelector('#btnFile')
+
+    // 区块大小
+    const chunkSize = 1024 * 1024 * 2
+
+    function upload(index) {
+      // 获取上传文件
+      const file = btnFile.files[0]
+      const [ fname, fext ] = file.name.split('.')
+      // 获取区块内容
+      const start = index * chunkSize
+      if (start > file.size) {// 当超出文件大小，停止递归上传
+        // 请求整合
+        merge(file.name)
+        return
+      }
+      const blob = file.slice(start, start + chunkSize)
+      const blobName = `${fname}.${index}.${fext}`
+      const blobFile = new File([blob], blobName)
+
+      const formData = new FormData()
+      formData.append('file', blobFile)
+      axios.post('http://127.0.0.1:3000/fen-upload', formData).then(res => {
+        console.log(res)
+        upload(++index)
+      })
+    }
+
+    function merge(name) {
+      axios.post('http://127.0.0.1:3000/merge', { name: name }).then(res => {
+        console.log(res)
+      })
+    }
+  </script>
+</body>
+
+</html>
