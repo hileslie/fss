@@ -13,7 +13,7 @@
 
 <body>
   <input type="file" id="btnFile">
-  <input type="button" value="上传" onclick="upload(0)">
+  <input type="button" value="分片上传" onclick="upload(0)">
   <script>
     let btnFile = document.querySelector('#btnFile')
 
@@ -28,7 +28,7 @@
       const start = index * chunkSize
       if (start > file.size) {// 当超出文件大小，停止递归上传
         // 请求整合
-        // merge(file.name)
+        merge(file.name)
         return
       }
       const blob = file.slice(start, start + chunkSize)

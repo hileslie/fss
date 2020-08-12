@@ -11,19 +11,41 @@
 </head>
 
 <body>
-  <input type="file" id="btnFile" multiple="multiple" >
-  <input type="button" value="上传" onclick="upload()">
+  <div>
+    <input type="file" id="btnFile">
+    <input type="button" value="单文件上传" onclick="upload()">
+  </div>
+
+
+
+  <div>
+    <input type="file" id="btnFileDuo" multiple="multiple" >
+    <input type="button" value="多文件上传" onclick="uploadDuo()">
+  </div>
+
   <script>
     let btnFile = document.querySelector('#btnFile')
 
     function upload() {
       // 获取上传文件
       const file = btnFile.files[0]
-      console.log('file: ', file)
       const formData = new FormData()
       formData.append('file', file)
-      console.log('formData: ', formData);
-      axios.post('http://127.0.0.1:3000/upload', formData).then(res => {
+      formData.append('file_id', 1234567)
+      axios.post('/upload', formData).then(res => {
+        console.log(res)
+      })
+    }
+
+    function uploadDuo() {
+      // 获取上传文件
+      const files = btnFileDuo.files;
+      const formData = new FormData()
+      for(let i = 0; i < files.length; i++){
+        formData.append('file', files[i])
+      }
+      formData.append('file_id', 1234567)
+      axios.post('/upload-duo', formData).then(res => {
         console.log(res)
       })
     }
