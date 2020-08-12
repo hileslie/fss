@@ -5,6 +5,8 @@ const koaBody = require('koa-body');
 const source = require('koa-static');
 const fse = require('fs-extra')
 const fs = require('fs');
+const send = require('koa-send');
+const archiver = require('archiver');
 
 const app = new Koa();
 const router = new Router()
@@ -66,6 +68,7 @@ const uploadStatic = async (obj) => {
 router.post('/upload', async ctx => {
   // const files = ctx.request.files
   // console.log('files: ', files.file);
+  console.log('ctx.request.body: ', ctx.request.body)
   let res = await uploadStatic(ctx.request);
   ctx.body = res;
 })
@@ -88,8 +91,8 @@ const uploadStatics = async (obj) => {
 
 // 多文件文件上传（小文件）
 router.post('/upload-duo', async ctx => {
-  const files = ctx.request.files
-  console.log('files: ', files.file);
+  // const files = ctx.request.files
+  // console.log('files: ', files.file);
   let res = await uploadStatics(ctx.request);
   ctx.body = res;
 })
@@ -140,6 +143,37 @@ router.post('/merge', async ctx => {
     msg: '合并成功',
     url: `http://localhost:3000/upload/${name}`
   }
+})
+
+
+// 单文件下载
+router.get('/download/:name', async (ctx) => {
+  const name = ctx.params.name;
+  const path = `temp/${name}`;
+  ctx.attachment(path);
+  await send(ctx, path);
+});
+
+// 批量压缩下载
+router.post('/downloadAll', async (ctx) => {
+  let {
+    files
+  } = ctx.request.body
+  // 将要打包的文件列表
+  // const files = [{name: '1.txt'},{name: '2.txt'}];
+  const zipName = '1.zip';
+  const zipStream = fs.createWriteStream(zipName);
+  const zip = archiver('zip');
+  zip.pipe(zipStream);
+  for (let i = 0; i < files.length; i++) {
+    // 添加单个文件到压缩包
+    zip.append(fs.createReadStream(path.resolve(__dirname, `../temp/${files[i].name}`)), {
+      name: files[i].name
+    })
+  }
+  await zip.finalize();
+  ctx.attachment(zipName);
+  await send(ctx, zipName);
 })
 
 app.use(router.routes()).use(router.allowedMethods())

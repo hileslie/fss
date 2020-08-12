@@ -17,10 +17,12 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
+    "archiver": "^5.0.0",
     "fs-extra": "^9.0.1",
     "koa": "^2.13.0",
     "koa-body": "^4.2.0",
     "koa-router": "^9.1.0",
+    "koa-send": "^5.0.1",
     "koa-static": "^5.0.0"
   }
 }

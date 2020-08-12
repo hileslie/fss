@@ -23,6 +23,14 @@
     <input type="button" value="多文件上传" onclick="uploadDuo()">
   </div>
 
+  <div>
+    <button onclick="handleClick()">立即下载单个</button>
+  </div>
+
+  <div>
+    <button onclick="handleClickD()">立即下载多个</button>
+  </div>
+
   <script>
     let btnFile = document.querySelector('#btnFile')
 
@@ -46,6 +54,22 @@
       }
       formData.append('file_id', 1234567)
       axios.post('/upload-duo', formData).then(res => {
+        console.log(res)
+      })
+    }
+
+    const handleClick = () => {
+        window.open('/download/HMS.png', '_self');
+    }
+
+    const handleClickD = () => {
+      let data = {
+        files: [
+          {name: 'HMS.png'},
+          {name: 'ic_checkbox_sel3@3x.png'},
+        ]
+      }
+      axios.post('/downloadAll', data).then(res => {
         console.log(res)
       })
     }
