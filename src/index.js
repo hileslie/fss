@@ -63,7 +63,6 @@ const uploadStatic = async (obj) => {
   return "上传成功！";
 }
 
-
 // 单文件文件上传（小文件）
 router.post('/upload', async ctx => {
   // const files = ctx.request.files
@@ -100,6 +99,7 @@ router.post('/upload-duo', async ctx => {
 // 单文件文件分片上传（大文件）
 router.post('/fen-upload', async ctx => { // 文件转移
   // koa-body 在处理完 file 后会绑定在 ctx.request.files
+  console.log('ctx.request.body: ', ctx.request.body)
   const file = ctx.request.files.file
   // [ name, index, ext ] - 分割文件名
   const fileNameArr = file.name.split('.')
