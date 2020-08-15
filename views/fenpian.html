@@ -24,6 +24,7 @@
       // 获取上传文件
       const file = btnFile.files[0]
       const [fname, fext] = file.name.split('.')
+      console.log(file)
       // 获取区块内容
       const start = index * chunkSize
       if (start > file.size) {// 当超出文件大小，停止递归上传

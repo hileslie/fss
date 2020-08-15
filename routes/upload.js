@@ -60,6 +60,7 @@ router.post('/fen-upload', async ctx => {
     const file = ctx.request.files.file
     // [ name, index, ext ] - 分割文件名
     const fileNameArr = file.name.split('.')
+
     // 存放切片的目录
     const chunkDir = `${TEMP_DIR}/${fileNameArr[0]}-${uid}-${material_id}`
     if (!fse.existsSync(chunkDir)) { // 没有目录就创建目录
@@ -103,7 +104,7 @@ router.post('/merge', async ctx => {
         )
     })
     // 删除临时文件夹
-    fse.removeSync(chunkDir)
+    // fse.removeSync(chunkDir)
     // 返回文件地址
     ctx.body = {
         msg: '合并成功',
