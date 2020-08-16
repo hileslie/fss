@@ -3,51 +3,30 @@ const fs = require('fs');
 const path = require('path');
 const fse = require('fs-extra');
 const { UPLOAD_DIR, TEMP_DIR } = require('../shared/constants');
+const uploadController = require('../controller/upload');
 
-// 上传单个文件
-const uploadStatic = async (obj) => {
-    const file = obj.files.file
-    // 创建可读流
-    const reader = fse.createReadStream(file.path);
-    let filePath = UPLOAD_DIR + `/${file.name}`;
-    // 创建可写流
-    const upStream = fse.createWriteStream(filePath);
-    // 可读流通过管道写入可写流
-    reader.pipe(upStream);
-    return "上传成功！";
-}
-
+const uploadCtrl = new uploadController();
 // 单文件文件上传（小文件）
 router.post('/upload', async ctx => {
-    // const files = ctx.request.files
-    // console.log('ctx.request.body: ', ctx.request.body)
-    let res = await uploadStatic(ctx.request);
+    const {
+        materialType,
+        folderName,
+    } = ctx.request.body;
+    const filePath = `${UPLOAD_DIR}/${materialType}/${folderName}`;
+    let res = await uploadCtrl.uploadStatic(ctx, filePath);
     ctx.body = res;
 })
-
-// 上传多个文件
-const uploadStatics = async (obj) => {
-    const files = obj.files.file
-    for (let file of files) {
-        // 创建可读流
-        const reader = fse.createReadStream(file.path);
-        let filePath = UPLOAD_DIR + `/${file.name}`;
-        // 创建可写流
-        const upStream = fse.createWriteStream(filePath);
-        // 可读流通过管道写入可写流
-        reader.pipe(upStream);
-    }
-    return "上传成功！";
-}
 
 // 多文件文件上传（小文件）
 router.post('/upload-duo', async ctx => {
-    // const files = ctx.request.files
-    // console.log('files: ', files.file);
-    let res = await uploadStatics(ctx.request);
+    const {
+        materialType,
+        folderName,
+    } = ctx.request.body;
+    const filePath = `${UPLOAD_DIR}/${materialType}/${folderName}`;
+    let res = await uploadCtrl.uploadStatics(ctx, filePath);
     ctx.body = res;
 })
-
 
 // 单文件文件分片上传（大文件）
 router.post('/fen-upload', async ctx => {
@@ -103,7 +82,7 @@ router.post('/merge', async ctx => {
         )
     })
     // 删除临时文件夹
-    // fse.removeSync(chunkDir)
+    fse.removeSync(chunkDir)
     // 返回文件地址
     ctx.body = {
         msg: '合并成功',

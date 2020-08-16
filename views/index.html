@@ -43,7 +43,10 @@
       const file = btnFile.files[0]
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('file_id', 1234567)
+      formData.append('file_id', 1)
+      formData.append('materialType', '线上营销')
+      formData.append('folderName', '公共')
+      formData.append('uid', 'uid')
       axios.post('/upload', formData).then(res => {
         console.log(res)
       })
@@ -55,8 +58,11 @@
       const formData = new FormData()
       for(let i = 0; i < files.length; i++){
         formData.append('file', files[i])
+        formData.append('file_id', i) 
       }
-      formData.append('file_id', 1234567)
+      formData.append('materialType', '线上营销')
+      formData.append('folderName', '公共')
+      formData.append('uid', 123456789)
       axios.post('/upload-duo', formData).then(res => {
         console.log(res)
       })
