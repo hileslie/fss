@@ -1,4 +1,5 @@
 const fs = require('fs');
+const fse = require('fs-extra');
 const path = require('path');
 // 递归创建目录 同步方法
 const mkdirsSync = function (dirname) {
@@ -36,8 +37,20 @@ const isExist = function(baseUrl) {
     return fs.existsSync(baseUrl);
 }
 
+// 文件后缀
+const extractExt = filename => filename.slice(filename.lastIndexOf("."), filename.length);
+
+// 返回已经上传切片名列表
+const getUploadedList = async (dirPath)=>{
+    return fse.existsSync(dirPath) 
+      ? (await fse.readdir(dirPath)).filter(name=>name[0]!=='.') // 过滤诡异的隐藏文件
+      : []
+}
+
 module.exports = {
     mkdirsSync,
     mkdirs,
     isExist,
+    extractExt,
+    getUploadedList,
 }

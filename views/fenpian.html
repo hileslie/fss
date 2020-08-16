@@ -1,63 +1,141 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>普通分片上传测试</title>
+    <link type="text/css" rel="stylesheet" href="" />
+    <script type="text/javascript" src=""></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="spark-md5.min.js"></script>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
-  <link type="text/css" rel="stylesheet" href="">
-  <script type="text/javascript" src=""></script>
-  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-</head>
+  <body>
+    <input type="file" id="btnFile" />
+    <input type="button" value="分片上传" onclick="uploadFile()" />
 
-<body>
-  <input type="file" id="btnFile">
-  <input type="button" value="分片上传" onclick="upload(0)">
-  <script>
-    let btnFile = document.querySelector('#btnFile')
+    <div><button onclick="getHash()">计算hash值</button></div>
 
-    // 区块大小
-    const chunkSize = 1024 * 1024 * 2
+    <div><button onclick="getVerify()">校验文件是否存在</button></div>
+    <script>
+      async function calculateHashSample() {
+        return new Promise((resolve) => {
+          const spark = new SparkMD5.ArrayBuffer();
+          const reader = new FileReader();
+          const file = btnFile.files[0];
+          // 文件大小
+          const size = file.size;
+          let offset = 2 * 1024 * 1024;
 
-    function upload(index) {
-      // 获取上传文件
-      const file = btnFile.files[0]
-      const [fname, fext] = file.name.split('.')
-      console.log(file)
-      // 获取区块内容
-      const start = index * chunkSize
-      if (start > file.size) {// 当超出文件大小，停止递归上传
-        // 请求整合
-        merge({
-          name: file.name,
-          material_id: 1,
-          folder_name: '公共',
-          uid: 123,
-        })
-        return
+          let chunks = [file.slice(0, offset)];
+
+          // 前面100K
+
+          let cur = offset;
+          while (cur < size) {
+            // 最后一块全部加进来
+            if (cur + offset >= size) {
+              chunks.push(file.slice(cur, cur + offset));
+            } else {
+              // 中间的 前中后去两个子杰
+              const mid = cur + offset / 2;
+              const end = cur + offset;
+              chunks.push(file.slice(cur, cur + 2));
+              chunks.push(file.slice(mid, mid + 2));
+              chunks.push(file.slice(end - 2, end));
+            }
+            // 前取两个子杰
+            cur += offset;
+          }
+          // 拼接
+          reader.readAsArrayBuffer(new Blob(chunks));
+
+          // 最后100K
+          reader.onload = (e) => {
+            spark.append(e.target.result);
+
+            resolve(spark.end());
+          };
+        });
       }
-      const blob = file.slice(start, start + chunkSize)
-      const blobName = `${fname}.${index}.${fext}`
-      const blobFile = new File([blob], blobName)
 
-      const formData = new FormData()
-      formData.append('file', blobFile)
-      formData.append('uid', 123)
-      formData.append('folder_name', '公共')
-      formData.append('material_id', '1')
-      axios.post('/fen-upload', formData).then(res => {
-        console.log(res)
-        upload(++index)
-      })
-    }
+      async function getHash() {
+        const hash = await calculateHashSample();
+        console.log("hash: ", hash);
+      }
 
-    function merge(data) {
-      axios.post('/merge', data).then(res => {
-        console.log(res)
-      })
-    }
-  </script>
-</body>
+      let btnFile = document.querySelector("#btnFile");
 
+      // 区块大小
+      const chunkSize = 1024 * 1024 * 2;
+
+      async function uploadFile() {
+        const fileHash = await calculateHashSample();
+        console.log("开始计时=>：", new Date().getTime());
+        upload(fileHash);
+      }
+
+      // 分片索引
+      var index = 0;
+      async function upload(fileHash) {
+        // 获取上传文件
+        const file = btnFile.files[0];
+        // 获取区块内容
+        const start = index * chunkSize;
+        if (start > file.size) {
+          // 当超出文件大小，停止递归上传
+          // 请求整合
+          merge({
+            name: file.name,
+            materialType: "线上营销",
+            folderName: "公共",
+            uid: 123456789,
+            fileHash,
+          });
+          return;
+        }
+        const blob = file.slice(start, start + chunkSize);
+        const blobName = `${fileHash}-${index}`; // 分块名称
+        const blobFile = new File([blob], blobName);
+
+        const formData = new FormData();
+        formData.append("file", blobFile);
+        formData.append("fileHash", fileHash);
+        formData.append("uid", 123456789);
+        formData.append("folderName", "公共");
+        formData.append("materialType", "线上营销");
+        axios.post("/fen-upload", formData).then((res) => {
+          console.log(res);
+          ++index;
+          upload(fileHash);
+        });
+      }
+
+      function merge(data) {
+        axios.post("/merge", data).then((res) => {
+          console.log(res);
+          console.log("结束计时=>：", new Date().getTime());
+        });
+      }
+
+      async function getVerify() {
+        const file = btnFile.files[0];
+        const fileHash = await calculateHashSample();
+        const data = {
+          name: file.name,
+          materialType: "线上营销",
+          folderName: "公共",
+          uid: 123456789,
+          fileHash,
+        };
+        axios.post("/verify", data).then((res) => {
+          console.log(res);
+        });
+      }
+    </script>
+  </body>
 </html>
