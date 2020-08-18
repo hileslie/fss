@@ -15,8 +15,17 @@
   </head>
 
   <body>
-    <input type="file" id="btnFile" />
-    <input type="button" value="分片上传" onclick="uploadFile()" />
+    <div>
+      <h2>单分片上传</h2>
+      <input type="file" id="btnFile" />
+      <input type="button" value="分片上传" onclick="uploadFile()" />
+    </div>
+
+    <div>
+      <h2>异步任务并发上传</h2>
+      <input type="file" id="btnFile" />
+      <input type="button" value="分片上传" onclick="uploadFile()" />
+    </div>
 
     <div><button onclick="getHash()">计算hash值</button></div>
 
