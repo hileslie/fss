@@ -2,293 +2,308 @@
 <html lang="zh-CN">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>普通分片上传测试</title>
-  <link type="text/css" rel="stylesheet" href="" />
-  <script type="text/javascript" src=""></script>
-  <script src="axios.min.js"></script>
-  <script src="spark-md5.min.js"></script>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+	<title>普通分片上传测试</title>
+	<link type="text/css" rel="stylesheet" href="" />
+	<script type="text/javascript" src=""></script>
+	<script src="axios.min.js"></script>
+	<script src="spark-md5.min.js"></script>
 </head>
 
 <body>
-  <div>
-    <h2>单分片上传耗时</h2>
-    <input type="file" id="singleFile" />
-    <input type="button" value="上传" onclick="uploadFile()" />
-  </div>
+	<div>
+		<h2>单分片上传耗时</h2>
+		<input type="file" id="singleFile" />
+		<input type="button" value="上传" onclick="uploadFile()" />
+	</div>
 
-  <div>
-    <h2>异步任务并发上传</h2>
-    <input type="file" id="asyncFile" />
-    <input type="button" value="上传" onclick="asyncUploadFile()" />
-  </div>
+	<div>
+		<h2>异步任务并发上传</h2>
+		<input type="file" id="asyncFile" />
+		<input type="button" value="上传" onclick="asyncUploadFile()" />
+	</div>
 
-  <div>
-    <h2>计算hash值</h2>
-    <div><button onclick="getHash()">计算hash值</button></div>
-  </div>
+	<div>
+		<h2>计算hash值</h2>
+		<div><button onclick="getHash()">计算hash值</button></div>
+	</div>
 
-  <div>
-    <h2>文件校验</h2>
-    <div><button onclick="getVerify()">校验文件是否存在</button></div>
-  </div>
+	<div>
+		<h2>文件校验</h2>
+		<div><button onclick="getVerify()">校验文件是否存在</button></div>
+	</div>
 
-  <script>
-    let singleFile = document.querySelector("#singleFile");
-    let asyncFile = document.querySelector("#asyncFile");
-    // 区块大小
-    const chunkSize = 1024 * 1024 * 2;
-    const SIZE = 1024 * 1024 * 2;
-    // 分片索引
-    var index = 0;
+	<script>
+		let singleFile = document.querySelector("#singleFile");
+		let asyncFile = document.querySelector("#asyncFile");
+		// 区块大小
+		const chunkSize = 1024 * 1024 * 2;
+		const SIZE = 1024 * 1024 * 2;
+		// 分片索引
+		var index = 0;
 
-    async function calculateHashSample(file) {
-      return new Promise((resolve) => {
-        const spark = new SparkMD5.ArrayBuffer();
-        const reader = new FileReader();
-        // 文件大小
-        const size = file.size;
-        let offset = 2 * 1024 * 1024;
+		async function calculateHashSample(file) {
+			return new Promise((resolve) => {
+				const spark = new SparkMD5.ArrayBuffer();
+				const reader = new FileReader();
+				// 文件大小
+				const size = file.size;
+				let offset = 2 * 1024 * 1024;
 
-        let chunks = [file.slice(0, offset)];
+				let chunks = [file.slice(0, offset)];
 
-        // 前面100K
+				// 前面100K
 
-        let cur = offset;
-        while (cur < size) {
-          // 最后一块全部加进来
-          if (cur + offset >= size) {
-            chunks.push(file.slice(cur, cur + offset));
-          } else {
-            // 中间的 前中后去两个子杰
-            const mid = cur + offset / 2;
-            const end = cur + offset;
-            chunks.push(file.slice(cur, cur + 2));
-            chunks.push(file.slice(mid, mid + 2));
-            chunks.push(file.slice(end - 2, end));
-          }
-          // 前取两个子杰
-          cur += offset;
-        }
-        // 拼接
-        reader.readAsArrayBuffer(new Blob(chunks));
+				let cur = offset;
+				while (cur < size) {
+					// 最后一块全部加进来
+					if (cur + offset >= size) {
+						chunks.push(file.slice(cur, cur + offset));
+					} else {
+						// 中间的 前中后去两个子杰
+						const mid = cur + offset / 2;
+						const end = cur + offset;
+						chunks.push(file.slice(cur, cur + 2));
+						chunks.push(file.slice(mid, mid + 2));
+						chunks.push(file.slice(end - 2, end));
+					}
+					// 前取两个子杰
+					cur += offset;
+				}
+				// 拼接
+				reader.readAsArrayBuffer(new Blob(chunks));
 
-        // 最后100K
-        reader.onload = (e) => {
-          spark.append(e.target.result);
+				// 最后100K
+				reader.onload = (e) => {
+					spark.append(e.target.result);
 
-          resolve(spark.end());
-        };
-      });
-    }
+					resolve(spark.end());
+				};
+			});
+		}
 
-    async function getHash(file) {
-      // const hash = await calculateHashSample(file);
-      // console.log("hash: ", hash);
-    }
+		async function getHash(file) {
+			// const hash = await calculateHashSample(file);
+			// console.log("hash: ", hash);
+		}
 
-    async function uploadFile() {
-      const fileHash = await calculateHashSample(singleFile.files[0]);
-      console.time("单分片上传耗时");
-      upload(fileHash);
-    }
+		async function uploadFile() {
+			const fileHash = await calculateHashSample(singleFile.files[0]);
+			console.time("单分片上传耗时");
+			upload(fileHash);
+		}
 
-    async function upload(fileHash) {
-      // 获取上传文件
-      const file = singleFile.files[0];
-      // 获取区块内容
-      const start = index * chunkSize;
-      if (start > file.size) {
-        // 当超出文件大小，停止递归上传
-        // 请求整合
-        merge({
-          name: file.name,
-          materialType: "线上营销",
-          folderName: "公共",
-          uid: 123456789,
-          fileHash,
-        });
-        return;
-      }
-      const blob = file.slice(start, start + chunkSize);
-      const blobName = `${fileHash}-${index}`; // 分块名称
-      const blobFile = new File([blob], blobName);
+		async function upload(fileHash) {
+			// 获取上传文件
+			const file = singleFile.files[0];
+			// 获取区块内容
+			const start = index * chunkSize;
+			if (start > file.size) {
+				// 当超出文件大小，停止递归上传
+				// 请求整合
+				merge({
+					name: file.name,
+					materialType: "线上营销",
+					folderName: "公共",
+					uid: 123456789,
+					fileHash,
+				});
+				return;
+			}
+			const blob = file.slice(start, start + chunkSize);
+			const blobName = `${fileHash}-${index}`; // 分块名称
+			const blobFile = new File([blob], blobName);
 
-      const formData = new FormData();
-      formData.append("file", blobFile);
-      formData.append("fileHash", fileHash);
-      formData.append("uid", 123456789);
-      formData.append("folderName", "公共");
-      formData.append("materialType", "线上营销");
-      axios.post("/fen-upload", formData).then((res) => {
-        ++index;
-        upload(fileHash);
-      });
-    }
+			const formData = new FormData();
+			formData.append("file", blobFile);
+			formData.append("fileHash", fileHash);
+			formData.append("uid", 123456789);
+			formData.append("folderName", "公共");
+			formData.append("materialType", "线上营销");
+			axios.post("/fen-upload", formData).then((res) => {
+				++index;
+				upload(fileHash);
+			});
+		}
 
-    function merge(data) {
-      axios.post("/merge", data).then((res) => {
-        console.timeEnd("单分片上传耗时");
-      });
-    }
+		function merge(data) {
+			axios.post("/merge", data).then((res) => {
+				console.timeEnd("单分片上传耗时");
+			});
+		}
 
-    async function getVerify() {
-      const file = singleFile.files[0];
-      const fileHash = await calculateHashSample(file);
-      const data = {
-        name: file.name,
-        materialType: "线上营销",
-        folderName: "公共",
-        uid: 123456789,
-        fileHash,
-      };
-      axios.post("/verify", data).then((res) => {
-        console.log(res);
-      });
-    }
+		async function getVerify() {
+			const file = singleFile.files[0];
+			const fileHash = await calculateHashSample(file);
+			const data = {
+				name: file.name,
+				materialType: "线上营销",
+				folderName: "公共",
+				uid: 123456789,
+				fileHash,
+			};
+			axios.post("/verify", data).then((res) => {
+				console.log(res);
+			});
+		}
 
-    // --------------------- //
+		// --------------------- //
 
-    function createFileChunk(file, size = SIZE) {
-      // 生成文件块
-      const chunks = [];
-      let cur = 0;
-      while (cur < file.size) {
-        chunks.push({ file: file.slice(cur, cur + size) });
-        cur += size;
-      }
-      return chunks;
-    }
+		function createFileChunk(file, size = SIZE) {
+			// 生成文件块
+			const chunks = [];
+			let cur = 0;
+			while (cur < file.size) {
+				chunks.push({ file: file.slice(cur, cur + size) });
+				cur += size;
+			}
+			return chunks;
+		}
 
-    async function asyncUploadFile() {
-      const file = asyncFile.files[0];
-      const hash = await calculateHashSample(file);
-      const uploadedList = [];
-      let chunks = createFileChunk(file);
-      chunks = chunks.map((chunk, index) => {
-        const chunkName = hash + "-" + index;
-        return {
-          fileHash: hash,
-          file: chunk.file,
-          index,
-          chunkName,
-          size: chunk.file.size
-        };
-      });
-      // 传入已经存在的切片清单
-      await this.uploadChunks(uploadedList, chunks);
-    }
+		async function asyncUploadFile() {
+			const file = asyncFile.files[0];
+			const hash = await calculateHashSample(file);
+			console.time("异步片上传耗时");
+			const uploadedList = [];
+			let chunks = createFileChunk(file);
+			chunks = chunks.map((chunk, index) => {
+				const chunkName = hash + "-" + index;
+				return {
+					fileHash: hash,
+					file: chunk.file,
+					index,
+					chunkName,
+					size: chunk.file.size
+				};
+			});
+			// 传入已经存在的切片清单
+			await this.uploadChunks(uploadedList, chunks, hash, file.name);
+		}
 
-    async function uploadChunks(uploadedList = [], chunks) {
-      const list = chunks
-        .filter(chunk => uploadedList.indexOf(chunk.chunkName) == -1)
-        .map(({ file, chunkName, index, fileHash }, i) => {
-          const formData = new FormData();
-          const blobFile = new File([file], chunkName);
-          formData.append("file", blobFile);
-          formData.append("fileHash", fileHash);
-          formData.append("uid", 123456789);
-          formData.append("folderName", "公共");
-          formData.append("materialType", "线上营销");
-          return { formData, index };
-        })
-      try {
-        const ret = await sendRequest(list, 4)
-        if (uploadedList.length + list.length === chunks.length) {
-          // 上传和已经存在之和 等于全部的再合并
-          // await this.mergeRequest();
-          console.log('mergeRequest')
-        }
-      } catch (e) {
-        // 上传有被reject的
-      }
-    }
+		async function uploadChunks(uploadedList = [], chunks, hash, name) {
+			console.log('chunks: ', chunks);
+			const list = chunks
+				.filter(chunk => uploadedList.indexOf(chunk.chunkName) == -1)
+				.map(({ file, chunkName, index, fileHash }, i) => {
+					const formData = new FormData();
+					const blobFile = new File([file], chunkName);
+					formData.append("file", blobFile);
+					formData.append("fileHash", fileHash);
+					formData.append("uid", 123456789);
+					formData.append("folderName", "公共");
+					formData.append("materialType", "线上营销");
+					return { formData, index };
+				})
+			console.log('list: ', list);
+			try {
+				const ret = await sendRequest(list, 4)
+				console.log('ret: ', ret);
+				if (uploadedList.length + list.length === chunks.length) {
+					// 上传和已经存在之和 等于全部的再合并
+					axios.post("/merge", {
+						name,
+						materialType: "线上营销",
+						folderName: "公共",
+						uid: 123456789,
+						fileHash: hash,
+					}).then((res) => {
+						console.timeEnd("异步片上传耗时");
+					});
+				}
+			} catch (e) {
+				// 上传有被reject的
+			}
+		}
 
-    async function sendRequest(urls, max = 4, retrys = 3) {
-      return new Promise((resolve, reject) => {
-        const len = urls.length;
-        let idx = 0;
-        let counter = 0;
-        const retryArr = []
-        const start = async () => {
-          // 有请求，有通道
-          while (counter < len && max > 0) {
-            max--; // 占用通道
-            console.log(idx, "start");
-            const i = urls.findIndex(v => v.status == Status.wait || v.status == Status.error)// 等待或者error
-            const formData = urls[i].formData;
-            const index = urls[i].index;
-            if (typeof retryArr[index] == 'number') {
-              console.log(index, '开始重试')
-            }
-            axios.post("/fen-upload", formData).then((res) => {
-              max++; // 释放通道
-              counter++;
-              urls[counter].done = true
-              if (counter === len) {
-                resolve();
-              } else {
-                start();
-              }
-            }).catch(() => {
-              // 初始值
-              if (typeof retryArr[index] !== 'number') {
-                retryArr[index] = 0
-              }
-              // 次数累加
-              retryArr[index]++
-              // 一个请求报错3次的
-              if (retryArr[index] >= 2) {
-                return reject() // 考虑abort所有别的
-              }
-              console.log(index, retryArr[index], '次报错')
-              // 3次报错以内的 重启
-              this.chunks[index].progress = -1 // 报错的进度条
-              max++; // 释放当前占用的通道，但是counter不累加
+		async function sendRequest(list, max = 4, retrys = 3) {
+			return new Promise((resolve, reject) => {
+				const len = list.length;
+				let indexs = [];
+				list.forEach((el) => {
+					indexs.push(el.index);
+				});
+				let counter = 0;
+				const retryArr = []
+				const start = async () => {
+					if (indexs.length === 0) return;
+					// 有请求，有通道
+					while (counter < len && max > 0) {
+						max--; // 占用通道
+						const curIndex = indexs.shift();
+						const formData = list[curIndex].formData;
+						console.log('curIndex: ', curIndex)
+						console.log('formData: ', formData)
+						const index = list[curIndex].index;
+						if (typeof retryArr[index] == 'number') {
+							console.log(index, '开始重试')
+						}
+						axios.post("/fen-upload", formData).then((res) => {
+							max++; // 释放通道
+							counter++;
+							if (counter === len) {
+								resolve(indexs);
+							} else {
+								start();
+							}
+						}).catch(() => {
+							indexs.push(curIndex);
+							// 初始值
+							if (typeof retryArr[index] !== 'number') {
+								retryArr[index] = 0
+							}
+							// 次数累加
+							retryArr[index]++
+							// 一个请求报错3次的
+							if (retryArr[index] >= retrys) {
+								return reject(indexs) // 考虑abort所有别的
+							}
+							console.log(index, retryArr[index], '次报错')
+							// 3次报错以内的 重启
+							max++; // 释放当前占用的通道，但是counter不累加
+							start()
+						});
+					}
+				}
+				start();
+			});
+		}
 
-              start()
-            });
-          }
-        }
-        start();
-      });
-    }
+	</script>
 
-  </script>
+	<!-- <script>
+		let mapLimit = (list, limit, asyncHandle) => {
+			let recursion = (arr) => {
+				return asyncHandle(arr.shift())
+					.then(() => {
+						if (arr.length !== 0) return recursion(arr)   // 数组还未迭代完，递归继续进行迭代
+						else return 'finish';
+					})
+			};
 
-  <script>
-    let mapLimit = (list, limit, asyncHandle) => {
-        let recursion = (arr) => {
-            return asyncHandle(arr.shift())
-                .then(()=>{
-                    if (arr.length!==0) return recursion(arr)   // 数组还未迭代完，递归继续进行迭代
-                    else return 'finish';
-                })
-        };
-        
-        let listCopy = [].concat(list);
-        let asyncList = []; // 正在进行的所有并发异步操作
-        while(limit--) {
-            asyncList.push( recursion(listCopy) ); 
-        }
-        return Promise.all(asyncList);  // 所有并发异步操作都完成后，本次并发控制迭代完成
-    }
-    var dataLists = [1,2,3,4,5,6,7,8,9,11,100,123];
-    var count = 0;
-    mapLimit(dataLists, 3, (curItem)=>{
-        return new Promise(resolve => {
-            count++
-            setTimeout(()=>{
-                console.log(curItem, '当前并发量:', count--)
-                resolve();
-            }, Math.random() * 5000)  
-        });
-    }).then(response => {
-        console.log('finish', response)
-    })
-  </script>
+			let listCopy = [].concat(list);
+			let asyncList = []; // 正在进行的所有并发异步操作
+			while (limit--) {
+				asyncList.push(recursion(listCopy));
+			}
+			console.log('asyncList: ', asyncList)
+			return Promise.all(asyncList);  // 所有并发异步操作都完成后，本次并发控制迭代完成
+		}
+		var dataLists = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 100, 123];
+		var count = 0;
+		mapLimit(dataLists, 3, (curItem) => {
+			return new Promise(resolve => {
+				count++
+				setTimeout(() => {
+					console.log(curItem, '当前并发量:', count--)
+					resolve();
+				}, Math.random() * 5000)
+			});
+		}).then(response => {
+			console.log('finish', response)
+		})
+	</script> -->
 </body>
 
 </html>
