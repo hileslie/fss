@@ -5,7 +5,7 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-	<title>普通分片上传测试</title>
+	<title>普通分片测试</title>
 	<link type="text/css" rel="stylesheet" href="" />
 	<script type="text/javascript" src=""></script>
 	<script src="axios.min.js"></script>
@@ -14,7 +14,7 @@
 
 <body>
 	<div>
-		<h2>单分片上传耗时</h2>
+		<h2>单分片上传</h2>
 		<input type="file" id="singleFile" />
 		<input type="button" value="上传" onclick="uploadFile()" />
 	</div>
@@ -27,17 +27,21 @@
 
 	<div>
 		<h2>计算hash值</h2>
-		<div><button onclick="getHash()">计算hash值</button></div>
+		<input type="file" id="hashFile" />
+		<button onclick="getHash()">计算hash值</button>
 	</div>
 
 	<div>
 		<h2>文件校验</h2>
-		<div><button onclick="getVerify()">校验文件是否存在</button></div>
+		<input type="file" id="verifyFile" />
+		<button onclick="getVerify()">校验文件是否存在</button>
 	</div>
 
 	<script>
 		let singleFile = document.querySelector("#singleFile");
 		let asyncFile = document.querySelector("#asyncFile");
+		let hashFile = document.querySelector("#hashFile");
+		let verifyFile = document.querySelector("#hashFile");
 		// 区块大小
 		const chunkSize = 1024 * 1024 * 2;
 		const SIZE = 1024 * 1024 * 2;
@@ -84,9 +88,12 @@
 			});
 		}
 
-		async function getHash(file) {
-			// const hash = await calculateHashSample(file);
-			// console.log("hash: ", hash);
+		async function getHash() {
+			console.time("hash计算耗时");
+			const file = hashFile.files[0];
+			const hash = await calculateHashSample(file);
+			console.timeEnd("hash计算耗时");
+			console.log("hash: ", hash);
 		}
 
 		async function uploadFile() {
@@ -122,7 +129,7 @@
 			formData.append("uid", 123456789);
 			formData.append("folderName", "公共");
 			formData.append("materialType", "线上营销");
-			axios.post("/fen-upload", formData).then((res) => {
+			axios.post("/upload/shard", formData).then((res) => {
 				++index;
 				upload(fileHash);
 			});
@@ -135,7 +142,7 @@
 		}
 
 		async function getVerify() {
-			const file = singleFile.files[0];
+			const file = verifyFile.files[0];
 			const fileHash = await calculateHashSample(file);
 			const data = {
 				name: file.name,
@@ -183,7 +190,6 @@
 		}
 
 		async function uploadChunks(uploadedList = [], chunks, hash, name) {
-			console.log('chunks: ', chunks);
 			const list = chunks
 				.filter(chunk => uploadedList.indexOf(chunk.chunkName) == -1)
 				.map(({ file, chunkName, index, fileHash }, i) => {
@@ -196,10 +202,8 @@
 					formData.append("materialType", "线上营销");
 					return { formData, index };
 				})
-			console.log('list: ', list);
 			try {
 				const ret = await sendRequest(list, 4)
-				console.log('ret: ', ret);
 				if (uploadedList.length + list.length === chunks.length) {
 					// 上传和已经存在之和 等于全部的再合并
 					axios.post("/merge", {
@@ -233,13 +237,11 @@
 						max--; // 占用通道
 						const curIndex = indexs.shift();
 						const formData = list[curIndex].formData;
-						console.log('curIndex: ', curIndex)
-						console.log('formData: ', formData)
 						const index = list[curIndex].index;
 						if (typeof retryArr[index] == 'number') {
 							console.log(index, '开始重试')
 						}
-						axios.post("/fen-upload", formData).then((res) => {
+						axios.post("/upload/shard", formData).then((res) => {
 							max++; // 释放通道
 							counter++;
 							if (counter === len) {

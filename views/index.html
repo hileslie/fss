@@ -27,13 +27,13 @@
     <button onclick="handleClick()">立即下载单个</button>
   </div>
 
-  <div>
+  <!-- <div>
     <button onclick="handleClickD()">立即下载多个</button>
   </div>
 
   <div>
     <button onclick="handleMkdir()">创建文件夹</button>
-  </div>
+  </div> -->
 
   <script>
     let btnFile = document.querySelector('#btnFile')
@@ -63,7 +63,7 @@
       formData.append('materialType', '线上营销')
       formData.append('folderName', '公共')
       formData.append('uid', 123456789)
-      axios.post('/upload-duo', formData).then(res => {
+      axios.post('/upload/batch', formData).then(res => {
         console.log(res)
       })
     }
